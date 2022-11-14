@@ -29,7 +29,7 @@ class Season(ReadFromBytes):
             offset=88,
         )
         
-
+    # TODO: doesn't disable corresponding widget
     def read(self, save_bytes: bytes):
         """implement the ReadFromBytes protocol, returns an empty dict if position couldn't be found
 
@@ -39,14 +39,12 @@ class Season(ReadFromBytes):
         Returns:
             _type_: _description_
         """
-        xp_marker_pos: int = save_bytes.find(self.xp.marker)
-        scrip_marker_pos: int = save_bytes.find(self.xp.marker)
+        xp_pos = self.xp.get_position(save_bytes)
+        scrip_pos = self.scrip.get_position(save_bytes)
         
-        if xp_marker_pos == -1 and scrip_marker_pos == -1:
+        if xp_pos == -1 and scrip_pos == -1:
             return dict()
         
-        xp_pos = xp_marker_pos + self.xp.offset
-        scrip_pos = scrip_marker_pos + self.scrip.offset
 
         xp:int = struct.unpack("i", save_bytes[xp_pos : xp_pos + 4])[0]
         scrip:int = struct.unpack("i", save_bytes[scrip_pos : scrip_pos + 4])[0]
