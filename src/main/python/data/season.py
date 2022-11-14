@@ -1,7 +1,6 @@
 # handles stuff relating to the current season (i.e. season XP, scrip, etc.)
 
 import struct
-from typing import Type
 from main.python.data.data import Data,ReadFromBytes
 
 
@@ -14,17 +13,12 @@ SEASON_GUIDS: dict[int, str] = {
 XP_PER_SEASON_LEVEL: int = 5000
 
 class Season(ReadFromBytes):
-    data: Type[Data] = Data
-    
-    def __init__(
-        self
-    ) -> None:
-        self.season_guid = SEASON_GUIDS[3]
-        self.xp = Season.data(
-            marker=bytes.fromhex(self.season_guid),
+    def __init__(self) -> None:
+        self.xp = Data(
+            marker=bytes.fromhex(SEASON_GUIDS[3]),
             offset=44,
         ) 
-        self.scrip = Season.data(
+        self.scrip = Data(
             marker=self.xp.marker,
             offset=88,
         )
@@ -45,9 +39,7 @@ class Season(ReadFromBytes):
         if xp_pos == -1 and scrip_pos == -1:
             return dict()
         
-
         xp:int = struct.unpack("i", save_bytes[xp_pos : xp_pos + 4])[0]
         scrip:int = struct.unpack("i", save_bytes[scrip_pos : scrip_pos + 4])[0]
 
         return {"xp": xp, "scrip": scrip}
-        
