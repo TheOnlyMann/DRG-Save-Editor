@@ -11,7 +11,7 @@ class ReadFromBytes(Protocol):
 
 class Data(NamedTuple):
     marker:bytes
-    offset:int
+    offset:int=0
     
     def get_position(self, save_bytes:bytes) -> int:
         """
