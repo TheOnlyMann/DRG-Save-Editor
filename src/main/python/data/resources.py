@@ -34,7 +34,7 @@ class Resources(ReadFromBytes):
         start_pos = save_bytes.find(RESOURCE_MARKER)
         value_len = 4 # offset for the actual value
         
-        resource_data_dict: dict[str, Data] = {k:ResourceDataBuilder(v) for k,v in RESOURCE_GUIDS.items()}
+        resource_data_dict: dict[str, Data] = {k:__ResourceDataBuilder(v) for k,v in RESOURCE_GUIDS.items()}
         return {
             k:int(
                 struct.unpack(
@@ -47,7 +47,7 @@ class Resources(ReadFromBytes):
             for k,v in resource_data_dict.items()
         }
     
-def ResourceDataBuilder(marker) -> Data:
+def __ResourceDataBuilder(marker) -> Data:
     return Data(
         marker,
         offset=16 # length of GUIDs in bytes

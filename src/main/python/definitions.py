@@ -1,38 +1,6 @@
 # contains constants relating to things like guids, xp_tables, etc.
 # global constants
 
-
-import re
-
-
-# xp_table[i] = XP needed for level i+1
-XP_TABLE: list[int] = [
-    0,
-    3000,
-    7000,
-    12000,
-    18000,
-    25000,
-    33000,
-    42000,
-    52000,
-    63000,
-    75000,
-    88000,
-    102000,
-    117000,
-    132500,
-    148500,
-    165000,
-    182000,
-    199500,
-    217500,
-    236000,
-    255000,
-    274500,
-    294500,
-    315000,
-]
 # ordered list of the promotion ranks (low -> high)
 PROMO_RANKS: list[str] = [
     "None",
