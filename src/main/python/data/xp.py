@@ -4,35 +4,6 @@ import struct
 
 from main.python.data.data import Data, ReadFromBytes
 
-# xp_table[i] = XP needed for level i+1
-XP_TABLE: list[int] = [
-    0,
-    3000,
-    7000,
-    12000,
-    18000,
-    25000,
-    33000,
-    42000,
-    52000,
-    63000,
-    75000,
-    88000,
-    102000,
-    117000,
-    132500,
-    148500,
-    165000,
-    182000,
-    199500,
-    217500,
-    236000,
-    255000,
-    274500,
-    294500,
-    315000,
-]
-
 class XP(ReadFromBytes):
     def __init__(self) -> None:
         self.__engineer   = __XpAndPromoInfo(b"\x85\xEF\x62\x6C\x65\xF1\x02\x4A\x8D\xFE\xB5\xD0\xF3\x90\x9D\x2E\x03\x00\x00\x00\x58\x50")
@@ -83,10 +54,3 @@ def __XpDataBuilder(marker) -> Data:
 def __PromoDataBuilder(XpData:Data) -> Data:
     return Data(XpData.marker, XpData.offset + 108)
 
-def xp_total_to_level(xp:int) -> tuple[int, int]:
-    for i in XP_TABLE:
-        if xp < i:
-            level = XP_TABLE.index(i)
-            remainder = xp - XP_TABLE[level - 1]
-            return (level, remainder)
-    return (25, 0)
