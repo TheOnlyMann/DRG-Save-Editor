@@ -4,7 +4,7 @@ import struct
 
 from main.python.data.data import Data, ReadFromBytes
 
-class credits(ReadFromBytes):
+class Credits(ReadFromBytes):
     def __init__(self) -> None:
         self.data = Data(b"Credits",33)
         

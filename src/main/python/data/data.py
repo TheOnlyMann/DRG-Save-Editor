@@ -25,7 +25,7 @@ class Data(ABC):
     offset:int
     
     @abstractmethod 
-    def get_position(self, save_bytes:bytes, start_pos:Optional[int], end_pos:Optional[int]) -> int:
+    def get_position(self, save_bytes:bytes, start_pos:Optional[int], end_pos:Optional[int]) -> int | None:
         """
         Args:
             save_bytes (bytes): save data to look through
@@ -40,5 +40,5 @@ class Data(ABC):
             start_pos if start_pos else None,
             end_pos if end_pos else None
         )
-        return -1 if marker_pos == -1 or marker_pos > len(save_bytes) else marker_pos + self.offset
+        return None if marker_pos == -1 or marker_pos > len(save_bytes) else marker_pos + self.offset
     
