@@ -14,8 +14,8 @@ XP_PER_SEASON_LEVEL: int = 5000
 
 class Season(ReadFromBytes):
     def __init__(self) -> None:
-        self.xp:Data = XP() 
-        self.scrip: Data = Scrip()
+        self.xp: Data = SeasonDataBuilder(3,44) 
+        self.scrip: Data = SeasonDataBuilder(3,88)
         
     # TODO: doesn't disable corresponding widget
     def read(self, save_bytes: bytes):
@@ -38,16 +38,5 @@ class Season(ReadFromBytes):
 
         return {"xp": xp, "scrip": scrip}
 
-class XP(Data):
-    marker=bytes.fromhex(SEASON_GUIDS[3]),
-    offset=44
-    
-    def get_position(self, save_bytes: bytes) -> int:
-        return super().get_position(save_bytes)
-    
-class Scrip(Data):
-    marker: bytes=bytes.fromhex(SEASON_GUIDS[3])
-    offset=88
-    
-    def get_position(self, save_bytes: bytes) -> int:
-        return super().get_position(save_bytes)
+def SeasonDataBuilder(season_num:int,offset:int) -> Data:
+    return Data(bytes.fromhex(SEASON_GUIDS[season_num]),offset)
