@@ -1,6 +1,5 @@
 # handles reading the save files into bytes
 
-from copy import deepcopy
 from main.python.data.credits import Credits
 from main.python.data.perkpoints import PerkPoints
 from main.python.data.resources import Resources
