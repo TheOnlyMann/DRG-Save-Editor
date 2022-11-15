@@ -2,7 +2,7 @@
 
 import struct
 
-from main.python.data.data import Data, ReadFromBytes
+from main.python.data.data import DataSource, ReadFromBytes
 
 SEASON_GUIDS: dict[int, str] = {
     1: "A47D407EC0E4364892CE2E03DE7DF0B3",
@@ -12,16 +12,20 @@ SEASON_GUIDS: dict[int, str] = {
 
 XP_PER_SEASON_LEVEL: int = 5000
 
+def __SeasonDataBuilder(season_num:int,offset:int) -> DataSource:
+    return DataSource(bytes.fromhex(SEASON_GUIDS[season_num]),offset)
+
 class Season(ReadFromBytes):
-    def __init__(self) -> None:
-        self.__xp: Data = __SeasonDataBuilder(3,44) 
-        self.__scrip: Data = __SeasonDataBuilder(3,88)
-        
+    __xp: DataSource = __SeasonDataBuilder(3,44) 
+    __scrip: DataSource = __SeasonDataBuilder(3,88)
+    __data:dict[str,int]|None = None
+    
     # TODO: doesn't disable corresponding widget
-    def read(self, save_bytes: bytes) -> dict[str, int] | None:
+    @staticmethod
+    def read(save_bytes: bytes) -> None:
         value_len = 4
-        xp_pos = self.__xp.get_position(save_bytes)
-        scrip_pos = self.__scrip.get_position(save_bytes)
+        xp_pos = Season.__xp.get_position(save_bytes)
+        scrip_pos = Season.__scrip.get_position(save_bytes)
         
         if xp_pos == -1 and scrip_pos == -1:
             return None
@@ -29,7 +33,8 @@ class Season(ReadFromBytes):
         xp:int = int(struct.unpack("i", save_bytes[xp_pos : xp_pos + value_len])[0])
         scrip:int = int(struct.unpack("i", save_bytes[scrip_pos : scrip_pos + value_len])[0])
 
-        return {"xp": xp, "scrip": scrip}
-
-def __SeasonDataBuilder(season_num:int,offset:int) -> Data:
-    return Data(bytes.fromhex(SEASON_GUIDS[season_num]),offset)
+        Season.__data = {"xp": xp, "scrip": scrip}
+    
+    @staticmethod
+    def data() -> dict[str, int] | None:
+        return Season.__data

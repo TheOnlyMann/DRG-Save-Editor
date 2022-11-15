@@ -8,9 +8,12 @@ from typing import Any, Callable, NamedTuple, Optional, Protocol
 GUID_RE = re.compile(r".*\(([0-9A-F]*)\)")
 
 class ReadFromBytes(Protocol):
-    def read(self, save_bytes:bytes) -> None|Any:
+    @staticmethod
+    def read(save_bytes:bytes) -> None:
         """implement the ReadFromBytes protocol, returns an empty dict if position couldn't be found
-
+        also saves any read data to a static variable accessed with .data()
+        
+        
         Args:
             save_bytes (bytes): bytes content of save file
 
@@ -19,8 +22,17 @@ class ReadFromBytes(Protocol):
         """
         ...
 
+    @staticmethod
+    def data() -> None|Any:
+        """returns the data read by read()
+
+        Returns:
+            None|Any: data, if it was found
+        """
+        ...
+
 @dataclass(frozen=True,init=True)
-class Data(ABC):
+class DataSource(ABC):
     marker:bytes
     offset:int
     

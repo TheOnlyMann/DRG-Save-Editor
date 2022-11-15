@@ -3,7 +3,7 @@
 import struct
 from typing import Type
 
-from main.python.data.data import Data, ReadFromBytes
+from main.python.data.data import DataSource, ReadFromBytes
 
 RESOURCE_GUIDS = {
     "yeast": "078548B93232C04085F892E084A74100",
@@ -25,16 +25,20 @@ RESOURCE_MARKER = (
     b"OwnedResources"  # marks the beginning of where resource values can be found
 )
 
+def __ResourceDataBuilder(marker) -> DataSource:
+    return DataSource(
+        marker,
+        offset=16 # length of GUIDs in bytes
+    )
+    
 class Resources(ReadFromBytes):
-    def __init__(self) -> None:
-        ...
-        
-    def read(self,save_bytes:bytes):
+    @staticmethod
+    def read(save_bytes:bytes) -> dict[str, int]:
         # extracts the resource counts from the save file
         start_pos = save_bytes.find(RESOURCE_MARKER)
         value_len = 4 # offset for the actual value
         
-        resource_data_dict: dict[str, Data] = {k:__ResourceDataBuilder(v) for k,v in RESOURCE_GUIDS.items()}
+        resource_data_dict: dict[str, DataSource] = {k:__ResourceDataBuilder(v) for k,v in RESOURCE_GUIDS.items()}
         return {
             k:int(
                 struct.unpack(
@@ -46,9 +50,3 @@ class Resources(ReadFromBytes):
             ) # save resource count
             for k,v in resource_data_dict.items()
         }
-    
-def __ResourceDataBuilder(marker) -> Data:
-    return Data(
-        marker,
-        offset=16 # length of GUIDs in bytes
-    )

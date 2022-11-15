@@ -2,12 +2,17 @@
 
 import struct
 
-from main.python.data.data import Data, ReadFromBytes
+from main.python.data.data import DataSource, ReadFromBytes
 
 class Credits(ReadFromBytes):
-    def __init__(self) -> None:
-        self.data = Data(b"Credits",33)
-        
-    def read(self, save_bytes: bytes) -> int:
-        pos = self.data.get_position(save_bytes)
-        return int(struct.unpack("i", save_bytes[pos : pos + 4])[0])
+    __datasource: DataSource = DataSource(b"Credits",33)
+    __data:int|None = None
+    
+    @staticmethod
+    def read(save_bytes: bytes) -> None:
+        pos = Credits.__datasource.get_position(save_bytes)
+        Credits.__data = int(struct.unpack("i", save_bytes[pos : pos + 4])[0])
+    
+    @staticmethod
+    def data() -> int|None:
+        return Credits.__data
