@@ -7,7 +7,7 @@ from main.python.data.season import Season
 from main.python.data.xp import XP
 
 
-class Reader:
+class __Reader:
     def __init__(self) -> None:
         self.credits = Credits()
         self.perkpoints = PerkPoints()
@@ -17,6 +17,7 @@ class Reader:
         # TODO: add weapon overclocks
 
     def read(self, file_name:str)->None:
+        self.filename = file_name
         save_bytes:bytes
         # read file into bytes
         with open(file_name, "rb") as f:
@@ -27,3 +28,5 @@ class Reader:
         self.resources.read(save_bytes)
         self.season.read(save_bytes)
         self.xp.read(save_bytes)
+        
+ReaderSingleton = __Reader()
