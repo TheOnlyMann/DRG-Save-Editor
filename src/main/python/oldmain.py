@@ -4,7 +4,6 @@ import sys
 from copy import deepcopy
 from pprint import pprint as pp
 from sys import platform
-from typing import Any
 
 import PySide2
 from fbs_runtime.application_context.PySide2 import ApplicationContext
@@ -15,9 +14,101 @@ from PySide2.QtWidgets import (QAction, QApplication, QFileDialog, QLineEdit,
                                QListWidgetItem, QMenu, QPlainTextEdit,
                                QTreeWidgetItem)
 
+from definitions import (GUID_RE, MAX_BADGES, PROMO_RANKS, RANK_TITLES, RESOURCE_GUIDS,
+                                     SEASON_GUID, XP_PER_SEASON_LEVEL,
+                                     XP_TABLE)
 
 if platform == "win32":
     import winreg
+
+
+class TextEditFocusChecking(QLineEdit):
+    """
+    Custom single-line text box to allow for event-driven updating of XP totals
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def focusOutEvent(self, e: PySide2.QtGui.QFocusEvent) -> None:
+        # check for blank text
+        box = self.objectName()
+        if self.text() == "":
+            return super().focusOutEvent(e)
+        season = False
+        value = int(self.text())
+
+        if box.startswith("driller"):
+            dwarf = "driller"
+        elif box.startswith("engineer"):
+            dwarf = "engineer"
+        elif box.startswith("gunner"):
+            dwarf = "gunner"
+        elif box.startswith("scout"):
+            dwarf = "scout"
+        elif box.startswith("season"):
+            season = True
+        else:
+            print("abandon all hope, ye who see this message")
+            return super().focusOutEvent(e)
+        # print(dwarf)
+
+        if season:
+            if box.endswith("xp"):
+                if value >= 5000:
+                    widget.season_xp.setText("4999")
+                elif value < 0:
+                    widget.season_xp.setText("0")
+            elif box.endswith("lvl_text"):
+                if value < 0:
+                    widget.season_lvl_text.setText("0")
+                elif value > 100:
+                    widget.season_lvl_text.setText("100")
+                    widget.season_xp_.setText("0")
+        else:
+            # decide/calculate how to update based on which box was changed
+            if box.endswith("xp"):  # total xp box changed
+                # print('main xp')
+                total = value
+            elif box.endswith("text"):  # dwarf level box changed
+                # print('level xp')
+                xp, level, rem = get_dwarf_xp(dwarf)
+                if XP_TABLE[value - 1] + rem == xp:
+                    total = xp
+                else:
+                    total = XP_TABLE[value - 1]
+            elif box.endswith("2"):  # xp for current level changed
+                xp, level, rem = get_dwarf_xp(dwarf)
+                total = XP_TABLE[level - 1] + value
+
+            update_xp(dwarf, total)  # update relevant xp fields
+
+        return super().focusOutEvent(e)  # call any other stuff that might happen (?)
+
+
+def get_dwarf_xp(dwarf):
+    # gets the total xp, level, and progress to the next level (rem)
+    if dwarf == "driller":
+        total = int(widget.driller_xp.text())
+        level = int(widget.driller_lvl_text.text())
+        rem = int(widget.driller_xp_2.text())
+    elif dwarf == "engineer":
+        total = int(widget.engineer_xp.text())
+        level = int(widget.engineer_lvl_text.text())
+        rem = int(widget.engineer_xp_2.text())
+    elif dwarf == "gunner":
+        total = int(widget.gunner_xp.text())
+        level = int(widget.gunner_lvl_text.text())
+        rem = int(widget.gunner_xp_2.text())
+    elif dwarf == "scout":
+        total = int(widget.scout_xp.text())
+        level = int(widget.scout_lvl_text.text())
+        rem = int(widget.scout_xp_2.text())
+    else:
+        total = rem = level = -1
+
+    return total, level, rem
+
 
 def update_xp(dwarf, total_xp=0):
     # updates the xp fields for the specified dwarf with the new xp total
@@ -53,57 +144,57 @@ def update_xp(dwarf, total_xp=0):
     update_rank()
 
 
-# def update_rank():
-#     global stats
-#     s_promo = (
-#         stats["xp"]["scout"]["promo"]
-#         if int(widget.scout_promo_box.currentIndex()) == definitions.MAX_BADGES
-#         else int(widget.scout_promo_box.currentIndex())
-#     )
-#     e_promo = (
-#         stats["xp"]["engineer"]["promo"]
-#         if int(widget.engineer_promo_box.currentIndex()) == definitions.MAX_BADGES
-#         else int(widget.engineer_promo_box.currentIndex())
-#     )
-#     g_promo = (
-#         stats["xp"]["gunner"]["promo"]
-#         if int(widget.gunner_promo_box.currentIndex()) == definitions.MAX_BADGES
-#         else int(widget.gunner_promo_box.currentIndex())
-#     )
-#     d_promo = (
-#         stats["xp"]["driller"]["promo"]
-#         if int(widget.driller_promo_box.currentIndex()) == definitions.MAX_BADGES
-#         else int(widget.driller_promo_box.currentIndex())
-#     )
+def update_rank():
+    global stats
+    s_promo = (
+        stats["xp"]["scout"]["promo"]
+        if int(widget.scout_promo_box.currentIndex()) == MAX_BADGES
+        else int(widget.scout_promo_box.currentIndex())
+    )
+    e_promo = (
+        stats["xp"]["engineer"]["promo"]
+        if int(widget.engineer_promo_box.currentIndex()) == MAX_BADGES
+        else int(widget.engineer_promo_box.currentIndex())
+    )
+    g_promo = (
+        stats["xp"]["gunner"]["promo"]
+        if int(widget.gunner_promo_box.currentIndex()) == MAX_BADGES
+        else int(widget.gunner_promo_box.currentIndex())
+    )
+    d_promo = (
+        stats["xp"]["driller"]["promo"]
+        if int(widget.driller_promo_box.currentIndex()) == MAX_BADGES
+        else int(widget.driller_promo_box.currentIndex())
+    )
 
-#     try:
-#         s_level = int(widget.scout_lvl_text.text())
-#         e_level = int(widget.engineer_lvl_text.text())
-#         g_level = int(widget.gunner_lvl_text.text())
-#         d_level = int(widget.driller_lvl_text.text())
-#         total_levels = (
-#             ((s_promo + e_promo + g_promo + d_promo) * 25)
-#             + s_level
-#             + e_level
-#             + g_level
-#             + d_level
-#             - 4
-#         )
-#         rank = total_levels // 3  # integer division
-#         rem = total_levels % 3
-#     except:
-#         rank = 1
-#         rem = 0
+    try:
+        s_level = int(widget.scout_lvl_text.text())
+        e_level = int(widget.engineer_lvl_text.text())
+        g_level = int(widget.gunner_lvl_text.text())
+        d_level = int(widget.driller_lvl_text.text())
+        total_levels = (
+            ((s_promo + e_promo + g_promo + d_promo) * 25)
+            + s_level
+            + e_level
+            + g_level
+            + d_level
+            - 4
+        )
+        rank = total_levels // 3  # integer division
+        rem = total_levels % 3
+    except:
+        rank = 1
+        rem = 0
 
-#     try:
-#         title = definitions.RANK_TITLES[rank]
-#     except:
-#         title = "Lord of the Deep"
+    try:
+        title = RANK_TITLES[rank]
+    except:
+        title = "Lord of the Deep"
 
-#     widget.classes_group.setTitle(f"Classes - Rank {rank+1} {rem}/3, {title}")
+    widget.classes_group.setTitle(f"Classes - Rank {rank+1} {rem}/3, {title}")
 
 
-#@Slot()
+@Slot() # type: ignore
 def open_file():
     global file_name
     global save_data
@@ -168,22 +259,137 @@ def populate_unforged_list(list_widget, unforged):
             oc.setText(f"Cosmetic: {k}")
         list_widget.addItem(oc)
 
-# TODO: bookmark for GET functions
 
-# TODO: isolated replacement for this doesn't do stuff with the widgets
-# def get_season_data(save_bytes:bytes):
-#     # scrip_marker = bytes.fromhex("546F6B656E73")
-#     season_xp_marker: bytes = bytes.fromhex(definitions.SEASON_GUID)
-#     season_xp_offset = 48
-#     scrip_offset = 88
-#     season_xp_pos = save_bytes.find(season_xp_marker) + season_xp_offset
-#     scrip_pos = save_bytes.find(season_xp_marker) + scrip_offset
-#     if season_xp_pos == season_xp_offset - 1 and scrip_pos == scrip_offset - 1:
-#         widget.season_group.setEnabled(False)
-#         return {"xp": 0, "scrip": 0}
-#     season_xp = struct.unpack("i", save_bytes[season_xp_pos : season_xp_pos + 4])[0]
-#     scrip = struct.unpack("i", save_bytes[scrip_pos : scrip_pos + 4])[0]
-#     return {"xp": season_xp, "scrip": scrip}
+def update_season_data():
+    pass
+
+
+def get_season_data(save_bytes):
+    # scrip_marker = bytes.fromhex("546F6B656E73")
+    season_xp_marker = bytes.fromhex(SEASON_GUID)
+    season_xp_offset = 48
+    scrip_offset = 88
+
+    season_xp_pos = save_bytes.find(season_xp_marker) + season_xp_offset
+    scrip_pos = save_bytes.find(season_xp_marker) + scrip_offset
+
+    if season_xp_pos == season_xp_offset - 1 and scrip_pos == scrip_offset - 1:
+        widget.season_group.setEnabled(False)
+        return {"xp": 0, "scrip": 0}
+
+    season_xp = struct.unpack("i", save_bytes[season_xp_pos : season_xp_pos + 4])[0]
+    scrip = struct.unpack("i", save_bytes[scrip_pos : scrip_pos + 4])[0]
+
+    return {"xp": season_xp, "scrip": scrip}
+
+
+def get_resources(save_bytes):
+    # extracts the resource counts from the save file
+    # print('getting resources')
+    # resource GUIDs
+    resources = deepcopy(RESOURCE_GUIDS)
+    guid_length = 16  # length of GUIDs in bytes
+    res_marker = (
+        b"OwnedResources"  # marks the beginning of where resource values can be found
+    )
+    res_pos = save_bytes.find(res_marker)
+    # print("getting resources")
+    for k, v in resources.items():  # iterate through resource list
+        # print(f"key: {k}, value: {v}")
+        marker = bytes.fromhex(v)
+        pos = (
+            save_bytes.find(marker, res_pos) + guid_length
+        )  # search for the matching GUID
+        end_pos = pos + 4  # offset for the actual value
+        # extract and unpack the value
+        temp = save_bytes[pos:end_pos]
+        unp = struct.unpack("f", temp)
+        resources[k] = int(unp[0])  # save resource count
+
+    # pp(resources)  # pretty printing for some reason
+    return resources
+
+
+def get_xp(save_bytes):
+    # print('getting xp')
+    en_marker = b"\x85\xEF\x62\x6C\x65\xF1\x02\x4A\x8D\xFE\xB5\xD0\xF3\x90\x9D\x2E\x03\x00\x00\x00\x58\x50"
+    sc_marker = b"\x30\xD8\xEA\x17\xD8\xFB\xBA\x4C\x95\x30\x6D\xE9\x65\x5C\x2F\x8C\x03\x00\x00\x00\x58\x50"
+    dr_marker = b"\x9E\xDD\x56\xF1\xEE\xBC\xC5\x48\x8D\x5B\x5E\x5B\x80\xB6\x2D\xB4\x03\x00\x00\x00\x58\x50"
+    gu_marker = b"\xAE\x56\xE1\x80\xFE\xC0\xC4\x4D\x96\xFA\x29\xC2\x83\x66\xB9\x7B\x03\x00\x00\x00\x58\x50"
+
+    # start_offset = 0
+    xp_offset = 48
+    eng_xp_pos = save_bytes.find(en_marker) + xp_offset
+    scout_xp_pos = save_bytes.find(sc_marker) + xp_offset
+    drill_xp_pos = save_bytes.find(dr_marker) + xp_offset
+    gun_xp_pos = save_bytes.find(gu_marker) + xp_offset
+
+    eng_xp = struct.unpack("i", save_bytes[eng_xp_pos : eng_xp_pos + 4])[0]
+    scout_xp = struct.unpack("i", save_bytes[scout_xp_pos : scout_xp_pos + 4])[0]
+    drill_xp = struct.unpack("i", save_bytes[drill_xp_pos : drill_xp_pos + 4])[0]
+    gun_xp = struct.unpack("i", save_bytes[gun_xp_pos : gun_xp_pos + 4])[0]
+
+    num_promo_offset = 108
+    eng_num_promo = struct.unpack(
+        "i",
+        save_bytes[eng_xp_pos + num_promo_offset : eng_xp_pos + num_promo_offset + 4],
+    )[0]
+    scout_num_promo = struct.unpack(
+        "i",
+        save_bytes[
+            scout_xp_pos + num_promo_offset : scout_xp_pos + num_promo_offset + 4
+        ],
+    )[0]
+    drill_num_promo = struct.unpack(
+        "i",
+        save_bytes[
+            drill_xp_pos + num_promo_offset : drill_xp_pos + num_promo_offset + 4
+        ],
+    )[0]
+    gun_num_promo = struct.unpack(
+        "i",
+        save_bytes[gun_xp_pos + num_promo_offset : gun_xp_pos + num_promo_offset + 4],
+    )[0]
+
+    xp_dict = {
+        "engineer": {"xp": eng_xp, "promo": eng_num_promo},
+        "scout": {"xp": scout_xp, "promo": scout_num_promo},
+        "driller": {"xp": drill_xp, "promo": drill_num_promo},
+        "gunner": {"xp": gun_xp, "promo": gun_num_promo},
+    }
+    # pp(xp_dict)
+    return xp_dict
+
+
+def xp_total_to_level(xp):
+    for i in XP_TABLE:
+        if xp < i:
+            level = XP_TABLE.index(i)
+            remainder = xp - XP_TABLE[level - 1]
+            return (level, remainder)
+    return (25, 0)
+
+
+def get_credits(save_bytes):
+    marker = b"Credits"
+    offset = 33
+    pos = save_bytes.find(marker) + offset
+    money = struct.unpack("i", save_bytes[pos : pos + 4])[0]
+
+    return money
+
+
+def get_perk_points(save_bytes):
+    marker = b"PerkPoints"
+    offset = 36
+    if save_bytes.find(marker) == -1:
+        perk_points = 0
+    else:
+        pos = save_bytes.find(marker) + offset
+        perk_points = struct.unpack("i", save_bytes[pos : pos + 4])[0]
+
+    return perk_points
+
 
 def build_oc_dict(guid_dict):
     overclocks = dict()
@@ -314,7 +520,7 @@ def get_overclocks(save_bytes, guid_source):
     return (forged, guids, unforged)
 
 
-#@Slot()
+@Slot() # type: ignore
 def filter_overclocks():
     item_filter = widget.combo_oc_filter.currentText()
     # forged_ocs, unacquired_ocs, unforged_ocs = get_overclocks(save_data, guid_dict)
@@ -337,7 +543,21 @@ def filter_overclocks():
                     oc.setHidden(True)
 
 
-#@Slot()
+@Slot() # type: ignore
+def oc_ctx_menu(pos):
+    # oc_context_menu = make_oc_context_menu()
+    # global oc_context_menu
+    ctx_menu = QMenu(widget.overclock_tree)
+    add_act = ctx_menu.addAction("Add Core(s) to Inventory")
+    global_pos = QCursor().pos()
+    action = ctx_menu.exec_(global_pos)
+    if action == add_act:
+        add_cores()
+
+    # add_act.triggered.connect(add_cores())
+
+
+@Slot() # type: ignore
 def add_cores():
     # print("add cores")
     global unforged_ocs
@@ -361,7 +581,7 @@ def add_cores():
     filter_overclocks()
 
 
-#@Slot()
+@Slot() # type: ignore
 def save_changes():
     changes = get_values()
     changes["unforged"] = unforged_ocs
@@ -402,8 +622,8 @@ def make_save_file(file_path, change_data):
     res_bytes = save_data[res_pos : res_pos + res_length]
 
     for k, v in resources.items():
-        if res_bytes.find(bytes.fromhex(definitions.RESOURCE_GUIDS[k])) > -1:
-            pos = res_bytes.find(bytes.fromhex(definitions.RESOURCE_GUIDS[k]))
+        if res_bytes.find(bytes.fromhex(RESOURCE_GUIDS[k])) > -1:
+            pos = res_bytes.find(bytes.fromhex(RESOURCE_GUIDS[k]))
             res_bytes = (
                 res_bytes[: pos + 16] + struct.pack("f", v) + res_bytes[pos + 20 :]
             )
@@ -590,7 +810,7 @@ def make_save_file(file_path, change_data):
         )
 
     # write season data
-    season_xp_marker = bytes.fromhex(definitions.SEASON_GUID)
+    season_xp_marker = bytes.fromhex(SEASON_GUID)
     season_xp_offset = 48
     season_xp_pos = save_data.find(season_xp_marker) + season_xp_offset
     # scrip_marker = b"Tokens"
@@ -613,15 +833,15 @@ def make_save_file(file_path, change_data):
     #     t.write(save_data)
 
 
-#@Slot()
-# def set_all_25():
-#     update_xp("driller", 315000)
-#     update_xp("engineer", 315000)
-#     update_xp("gunner", 315000)
-#     update_xp("scout", 315000)
+@Slot() # type: ignore
+def set_all_25():
+    update_xp("driller", 315000)
+    update_xp("engineer", 315000)
+    update_xp("gunner", 315000)
+    update_xp("scout", 315000)
 
 
-#@Slot()
+@Slot() # type: ignore
 def reset_values():
     global stats
     global unforged_ocs
@@ -656,8 +876,8 @@ def reset_values():
     widget.driller_xp_2.setText(str(d_xp[1]))
     widget.driller_promo_box.setCurrentIndex(
         stats["xp"]["driller"]["promo"]
-        if stats["xp"]["driller"]["promo"] < definitions.MAX_BADGES
-        else definitions.MAX_BADGES
+        if stats["xp"]["driller"]["promo"] < MAX_BADGES
+        else MAX_BADGES
     )
     # print('after driller')
 
@@ -667,8 +887,8 @@ def reset_values():
     widget.engineer_xp_2.setText(str(e_xp[1]))
     widget.engineer_promo_box.setCurrentIndex(
         stats["xp"]["engineer"]["promo"]
-        if stats["xp"]["engineer"]["promo"] < definitions.MAX_BADGES
-        else definitions.MAX_BADGES
+        if stats["xp"]["engineer"]["promo"] < MAX_BADGES
+        else MAX_BADGES
     )
     # print('after engineer')
 
@@ -678,8 +898,8 @@ def reset_values():
     widget.gunner_xp_2.setText(str(g_xp[1]))
     widget.gunner_promo_box.setCurrentIndex(
         stats["xp"]["gunner"]["promo"]
-        if stats["xp"]["gunner"]["promo"] < definitions.MAX_BADGES
-        else definitions.MAX_BADGES
+        if stats["xp"]["gunner"]["promo"] < MAX_BADGES
+        else MAX_BADGES
     )
     # print('after gunner')
 
@@ -689,8 +909,8 @@ def reset_values():
     widget.scout_xp_2.setText(str(s_xp[1]))
     widget.scout_promo_box.setCurrentIndex(
         stats["xp"]["scout"]["promo"]
-        if stats["xp"]["scout"]["promo"] < definitions.MAX_BADGES
-        else definitions.MAX_BADGES
+        if stats["xp"]["scout"]["promo"] < MAX_BADGES
+        else MAX_BADGES
     )
     # print('after scout')
 
@@ -703,12 +923,12 @@ def reset_values():
 
     # reset season data
     season_total_xp = stats["season"]["xp"]
-    widget.season_xp.setText(str(season_total_xp % definitions.XP_PER_SEASON_LEVEL))
-    widget.season_lvl_text.setText(str(season_total_xp // definitions.XP_PER_SEASON_LEVEL))
+    widget.season_xp.setText(str(season_total_xp % XP_PER_SEASON_LEVEL))
+    widget.season_lvl_text.setText(str(season_total_xp // XP_PER_SEASON_LEVEL))
     widget.scrip_text.setText(str(stats["season"]["scrip"]))
 
 
-#@Slot()
+@Slot() # type: ignore
 def add_crafting_mats():
     cost = {
         "bismor": 0,
@@ -729,7 +949,7 @@ def add_crafting_mats():
     print(cost)
     add_resources(cost)
 
-# TODO: expand Resources functionality
+
 def add_resources(res_dict):
     # res_dict is {'bismor': 123, 'credits': 10000, ...}
     try:
@@ -805,7 +1025,7 @@ def add_resources(res_dict):
     except:
         pass
 
-# TODO: move into new subclasses
+
 def init_values(save_data):
     # global stats
     # print('init values')
@@ -830,7 +1050,7 @@ def init_values(save_data):
     stats["brewing"]["starch"] = resources["starch"]
     stats["brewing"]["barley"] = resources["barley"]
     stats["brewing"]["malt"] = resources["malt"]
-    stats["season"] =  get_season_data(save_data)
+    stats["season"] = get_season_data(save_data)
 
     # print('printing stats')
     # pp(stats)
@@ -875,18 +1095,18 @@ def get_values():
     engineer_promo = int(widget.engineer_promo_box.currentIndex())
 
     ns["xp"]["driller"]["promo"] = (
-        driller_promo if driller_promo < definitions.MAX_BADGES else stats["xp"]["driller"]["promo"]
+        driller_promo if driller_promo < MAX_BADGES else stats["xp"]["driller"]["promo"]
     )
     ns["xp"]["engineer"]["promo"] = (
         engineer_promo
-        if engineer_promo < definitions.MAX_BADGES
+        if engineer_promo < MAX_BADGES
         else stats["xp"]["engineer"]["promo"]
     )
     ns["xp"]["gunner"]["promo"] = (
-        gunner_promo if gunner_promo < definitions.MAX_BADGES else stats["xp"]["gunner"]["promo"]
+        gunner_promo if gunner_promo < MAX_BADGES else stats["xp"]["gunner"]["promo"]
     )
     ns["xp"]["scout"]["promo"] = (
-        scout_promo if scout_promo < definitions.MAX_BADGES else stats["xp"]["scout"]["promo"]
+        scout_promo if scout_promo < MAX_BADGES else stats["xp"]["scout"]["promo"]
     )
 
     ns["misc"]["error"] = int(widget.error_text.text())
@@ -905,7 +1125,7 @@ def get_values():
     return ns
 
 
-#@Slot()
+@Slot() # type: ignore
 def remove_selected_ocs():
     global unforged_ocs
     global unacquired_ocs
@@ -913,7 +1133,7 @@ def remove_selected_ocs():
     list_items = widget.unforged_list.selectedItems()
     items_to_remove = list()
     for i in list_items:
-        items_to_remove.append(definitions.GUID_RE.search(i.text()).group(1))
+        items_to_remove.append(GUID_RE.search(i.text()).group(1))
         item = widget.unforged_list.row(i)
         widget.unforged_list.takeItem(item)
 
@@ -935,7 +1155,7 @@ def remove_ocs(oc_list):
     filter_overclocks()
 
 
-#@Slot()
+@Slot() # type: ignore
 def remove_all_ocs():
     global unforged_ocs
     # unforged_ocs = dict()
@@ -943,17 +1163,17 @@ def remove_all_ocs():
     unforged_list = widget.unforged_list
     for i in range(unforged_list.count()):
         item = unforged_list.item(i)
-        items_to_remove.append(definitions.GUID_RE.search(item.text()).group(1))
+        items_to_remove.append(GUID_RE.search(item.text()).group(1))
 
     remove_ocs(items_to_remove)
     unforged_list.clear()
 
 
 # global variable definitions
-forged_ocs:dict[Any,Any] = dict()
-unforged_ocs:dict[Any,Any] = dict()
-unacquired_ocs:dict[Any,Any] = dict()
-stats:dict[Any,Any] = dict()
+forged_ocs = dict() # type: ignore
+unforged_ocs = dict() # type: ignore
+unacquired_ocs = dict() # type: ignore
+stats = dict() # type: ignore
 file_name = ""
 save_data = b""
 
@@ -1004,7 +1224,7 @@ if __name__ == "__main__":
         widget.scout_promo_box,
     ]
     for i in promo_boxes:
-        for j in definitions.PROMO_RANKS:
+        for j in PROMO_RANKS:
             i.addItem(j)
 
     # for k,v in season_guids.items():
@@ -1021,6 +1241,7 @@ if __name__ == "__main__":
     widget.actionAdd_overclock_crafting_materials.triggered.connect(add_crafting_mats)
     widget.actionReset_to_original_values.triggered.connect(reset_values)
     widget.combo_oc_filter.currentTextChanged.connect(filter_overclocks)
+    # widget.overclock_tree.customContextMenuRequested.connect(oc_ctx_menu)
     widget.add_cores_button.clicked.connect(add_cores)
     widget.remove_all_ocs.clicked.connect(remove_all_ocs)
     widget.remove_selected_ocs.clicked.connect(remove_selected_ocs)
