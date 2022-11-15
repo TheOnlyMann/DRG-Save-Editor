@@ -26,8 +26,8 @@ class Season(ReadFromBytes):
         if xp_pos == -1 and scrip_pos == -1:
             return None
         
-        xp:int = struct.unpack("i", save_bytes[xp_pos : xp_pos + value_len])[0]
-        scrip:int = struct.unpack("i", save_bytes[scrip_pos : scrip_pos + value_len])[0]
+        xp:int = int(struct.unpack("i", save_bytes[xp_pos : xp_pos + value_len])[0])
+        scrip:int = int(struct.unpack("i", save_bytes[scrip_pos : scrip_pos + value_len])[0])
 
         return {"xp": xp, "scrip": scrip}
 

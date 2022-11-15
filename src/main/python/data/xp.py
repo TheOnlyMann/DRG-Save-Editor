@@ -36,13 +36,13 @@ class __XpAndPromoInfo:
         
     def __update_value(self,save_bytes)->None:
         value_len = 4
-        self.xp_value:int = struct.unpack("i", save_bytes[self.xp_pos : self.xp_pos + value_len])[0]
-        self.promo_value:int = struct.unpack(
+        self.xp_value:int = int(struct.unpack("i", save_bytes[self.xp_pos : self.xp_pos + value_len])[0])
+        self.promo_value:int = int(struct.unpack(
             "i",
             save_bytes[
                 self.promo_pos: self.promo_pos + 4
             ],
-        )[0]
+        )[0])
         
     def update(self,save_bytes)->None:
         self.__update_pos(save_bytes)

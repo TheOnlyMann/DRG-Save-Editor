@@ -8,7 +8,7 @@ from typing import Any, Callable, NamedTuple, Optional, Protocol
 GUID_RE = re.compile(r".*\(([0-9A-F]*)\)")
 
 class ReadFromBytes(Protocol):
-    def read(self, save_bytes:bytes) -> None|dict[Any,Any]:
+    def read(self, save_bytes:bytes) -> None|Any:
         """implement the ReadFromBytes protocol, returns an empty dict if position couldn't be found
 
         Args:
