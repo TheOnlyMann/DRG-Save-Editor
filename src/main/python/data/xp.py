@@ -35,22 +35,22 @@ XP_TABLE: list[int] = [
 
 class XP(ReadFromBytes):
     def __init__(self) -> None:
-        self.engineer   = __XpAndPromoInfo(b"\x85\xEF\x62\x6C\x65\xF1\x02\x4A\x8D\xFE\xB5\xD0\xF3\x90\x9D\x2E\x03\x00\x00\x00\x58\x50")
-        self.scout      = __XpAndPromoInfo(b"\x30\xD8\xEA\x17\xD8\xFB\xBA\x4C\x95\x30\x6D\xE9\x65\x5C\x2F\x8C\x03\x00\x00\x00\x58\x50")
-        self.driller    = __XpAndPromoInfo(b"\x9E\xDD\x56\xF1\xEE\xBC\xC5\x48\x8D\x5B\x5E\x5B\x80\xB6\x2D\xB4\x03\x00\x00\x00\x58\x50")
-        self.gunner     = __XpAndPromoInfo(b"\xAE\x56\xE1\x80\xFE\xC0\xC4\x4D\x96\xFA\x29\xC2\x83\x66\xB9\x7B\x03\x00\x00\x00\x58\x50")
+        self.__engineer   = __XpAndPromoInfo(b"\x85\xEF\x62\x6C\x65\xF1\x02\x4A\x8D\xFE\xB5\xD0\xF3\x90\x9D\x2E\x03\x00\x00\x00\x58\x50")
+        self.__scout      = __XpAndPromoInfo(b"\x30\xD8\xEA\x17\xD8\xFB\xBA\x4C\x95\x30\x6D\xE9\x65\x5C\x2F\x8C\x03\x00\x00\x00\x58\x50")
+        self.__driller    = __XpAndPromoInfo(b"\x9E\xDD\x56\xF1\xEE\xBC\xC5\x48\x8D\x5B\x5E\x5B\x80\xB6\x2D\xB4\x03\x00\x00\x00\x58\x50")
+        self.__gunner     = __XpAndPromoInfo(b"\xAE\x56\xE1\x80\xFE\xC0\xC4\x4D\x96\xFA\x29\xC2\x83\x66\xB9\x7B\x03\x00\x00\x00\x58\x50")
         
     def read(self, save_bytes: bytes):
-        self.engineer.update(save_bytes)
-        self.scout.update(save_bytes)
-        self.driller.update(save_bytes)
-        self.gunner.update(save_bytes)
+        self.__engineer.update(save_bytes)
+        self.__scout.update(save_bytes)
+        self.__driller.update(save_bytes)
+        self.__gunner.update(save_bytes)
         
         return {
-            "engineer": {"xp": self.engineer.xp_value,  "promo": self.engineer.promo_value},
-            "scout":    {"xp": self.scout.xp_value,     "promo": self.scout.promo_value},
-            "driller":  {"xp": self.driller.xp_value,   "promo": self.driller.promo_value},
-            "gunner":   {"xp": self.gunner.xp_value,    "promo": self.gunner.promo_value},
+            "engineer": {"xp": self.__engineer.xp_value,  "promo": self.__engineer.promo_value},
+            "scout":    {"xp": self.__scout.xp_value,     "promo": self.__scout.promo_value},
+            "driller":  {"xp": self.__driller.xp_value,   "promo": self.__driller.promo_value},
+            "gunner":   {"xp": self.__gunner.xp_value,    "promo": self.__gunner.promo_value},
         }
         
         
