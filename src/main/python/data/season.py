@@ -14,27 +14,20 @@ XP_PER_SEASON_LEVEL: int = 5000
 
 class Season(ReadFromBytes):
     def __init__(self) -> None:
-        self.xp: Data = SeasonDataBuilder(3,44) 
-        self.scrip: Data = SeasonDataBuilder(3,88)
+        self.__xp: Data = SeasonDataBuilder(3,44) 
+        self.__scrip: Data = SeasonDataBuilder(3,88)
         
     # TODO: doesn't disable corresponding widget
-    def read(self, save_bytes: bytes):
-        """implement the ReadFromBytes protocol, returns an empty dict if position couldn't be found
-
-        Args:
-            save_bytes (bytes): bytes content of save file
-
-        Returns:
-            _type_: _description_
-        """
-        xp_pos = self.xp.get_position(save_bytes)
-        scrip_pos = self.scrip.get_position(save_bytes)
+    def read(self, save_bytes: bytes) -> dict[str, int] | None:
+        value_len = 4
+        xp_pos = self.__xp.get_position(save_bytes)
+        scrip_pos = self.__scrip.get_position(save_bytes)
         
         if xp_pos == -1 and scrip_pos == -1:
-            return dict()
+            return None
         
-        xp:int = struct.unpack("i", save_bytes[xp_pos : xp_pos + 4])[0]
-        scrip:int = struct.unpack("i", save_bytes[scrip_pos : scrip_pos + 4])[0]
+        xp:int = struct.unpack("i", save_bytes[xp_pos : xp_pos + value_len])[0]
+        scrip:int = struct.unpack("i", save_bytes[scrip_pos : scrip_pos + value_len])[0]
 
         return {"xp": xp, "scrip": scrip}
 
