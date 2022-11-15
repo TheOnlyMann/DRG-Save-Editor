@@ -185,23 +185,87 @@ class XP(ReadFromBytes):
         XP.__gunner.update(save_bytes)
         
         XP.__data = {
-            "engineer": {"xp": XP.__engineer.xp_value,  "promo": XP.__engineer.promo_value},
-            "scout":    {"xp": XP.__scout.xp_value,     "promo": XP.__scout.promo_value},
             "driller":  {"xp": XP.__driller.xp_value,   "promo": XP.__driller.promo_value},
+            "engineer": {"xp": XP.__engineer.xp_value,  "promo": XP.__engineer.promo_value},
             "gunner":   {"xp": XP.__gunner.xp_value,    "promo": XP.__gunner.promo_value},
+            "scout":    {"xp": XP.__scout.xp_value,     "promo": XP.__scout.promo_value},
         }
     
     @staticmethod
     def data() -> None | dict[str, dict[str, int]]:
         return XP.__data
     
+    @staticmethod
+    def get_xp(dwarf:str) -> tuple[int,int,int] | None:
+        """gets the total xp, level, and progress to the next level (rem)"""
+        if XP.__data:
+            if XP.__data.get(dwarf): # type: ignore
+                total = XP.__data[dwarf]["xp"] # type: ignore
+                level, rem = XP.xp_total_to_level(total)
+            
+            else:
+                total = rem = level = -1 
+        else:
+            return None    
+        return total, level, rem
 
-def __xp_total_to_level(xp:int) -> tuple[int, int]:
-    for i in XP_TABLE:
-        if xp < i:
-            level = XP_TABLE.index(i)
-            remainder = xp - XP_TABLE[level - 1]
-            return (level, remainder)
-    return (25, 0)
+    @staticmethod
+    def update_xp(dwarf, total_xp=0)->bool:
+        if XP.__data and XP.__data.get(dwarf): # type: ignore
+            XP.__data[dwarf]["xp"] = total_xp
+            return True
+        else:
+            return False
+        
+    @staticmethod
+    def update_promos(driller_index,engineer_index,gunner_index,scout_index)->bool:
+        if XP.__data:
+            XP.__data["driller"]["promo"] = XP.__data["driller"]["promo"] if driller_index == MAX_BADGES else driller_index
+            XP.__data["engineer"]["promo"] = XP.__data["engineer"]["promo"] if engineer_index == MAX_BADGES else engineer_index
+            XP.__data["gunner"]["promo"] = XP.__data["gunner"]["promo"] if gunner_index == MAX_BADGES else gunner_index
+            XP.__data["scout"]["promo"] = XP.__data["scout"]["promo"] if scout_index == MAX_BADGES else scout_index
+            return True
+        else: 
+            return False
+        
+    @staticmethod
+    def get_rank_title() -> str:
+        default_str = "Classes - Rank 0 0/3, Lord of the Deep"
+        #the original code had this in a try / except statement
+        if XP.__data:
+            dpromo:int = XP.__data["driller"]["promo"]
+            epromo:int = XP.__data["engineer"]["promo"]
+            gpromo:int = XP.__data["gunner"]["promo"]
+            spromo:int = XP.__data["scout"]["promo"]
+            
+            dlvl:int = XP.get_xp("driller")[1] # type: ignore
+            elvl:int = XP.get_xp("engineer")[1] # type: ignore
+            glvl:int = XP.get_xp("gunner")[1] # type: ignore
+            slvl:int = XP.get_xp("scout")[1] # type: ignore
+            
+            total_levels = (
+                ((dpromo + epromo + gpromo + spromo) * 25)
+                + dlvl + elvl + glvl + slvl
+            )
+            
+            rank = total_levels // 3
+            rem = total_levels % 3
+            
+            title = RANK_TITLES[rank] if rank in RANK_TITLES else "Lord of the Deep"
+        
+            return f"Classes - Rank {rank+1} {rem}/3, {title}"
+        else:
+            return default_str
+
+    
+    
+    @staticmethod
+    def xp_total_to_level(xp:int) -> tuple[int, int]:
+        for i in XP_TABLE:
+            if xp < i:
+                level = XP_TABLE.index(i)
+                remainder = xp - XP_TABLE[level - 1]
+                return (level, remainder)
+        return (25, 0)
 
 
