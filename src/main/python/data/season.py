@@ -1,8 +1,8 @@
 # handles stuff relating to the current season (i.e. season XP, scrip, etc.)
 
 import struct
-from main.python.data.data import Data,ReadFromBytes
 
+from main.python.data.data import Data, ReadFromBytes
 
 SEASON_GUIDS: dict[int, str] = {
     1: "A47D407EC0E4364892CE2E03DE7DF0B3",
@@ -14,14 +14,8 @@ XP_PER_SEASON_LEVEL: int = 5000
 
 class Season(ReadFromBytes):
     def __init__(self) -> None:
-        self.xp = Data(
-            marker=bytes.fromhex(SEASON_GUIDS[3]),
-            offset=44,
-        ) 
-        self.scrip = Data(
-            marker=self.xp.marker,
-            offset=88,
-        )
+        self.xp:Data = XP() 
+        self.scrip: Data = Scrip()
         
     # TODO: doesn't disable corresponding widget
     def read(self, save_bytes: bytes):
@@ -43,3 +37,17 @@ class Season(ReadFromBytes):
         scrip:int = struct.unpack("i", save_bytes[scrip_pos : scrip_pos + 4])[0]
 
         return {"xp": xp, "scrip": scrip}
+
+class XP(Data):
+    marker=bytes.fromhex(SEASON_GUIDS[3]),
+    offset=44
+    
+    def get_position(self, save_bytes: bytes) -> int:
+        return super().get_position(save_bytes)
+    
+class Scrip(Data):
+    marker: bytes=bytes.fromhex(SEASON_GUIDS[3])
+    offset=88
+    
+    def get_position(self, save_bytes: bytes) -> int:
+        return super().get_position(save_bytes)

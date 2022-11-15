@@ -1,6 +1,8 @@
 
 
 import re
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any, Callable, NamedTuple, Protocol
 
 GUID_RE = re.compile(r".*\(([0-9A-F]*)\)")
@@ -9,10 +11,12 @@ class ReadFromBytes(Protocol):
     def read(self, save_bytes:bytes) -> Any:
         ...
 
-class Data(NamedTuple):
+@dataclass(frozen=True,init=True)
+class Data(ABC):
     marker:bytes
-    offset:int=0
+    offset:int
     
+    @abstractmethod 
     def get_position(self, save_bytes:bytes) -> int:
         """
         Args:
